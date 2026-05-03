@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Customization Plugin — Shareholder Update</title>
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0B0E22;
+    --bg-mid: #131734;
+    --bg-light: #1E2349;
+    --bg-card: #1A1F40;
+    --coral: #FF4F84;
+    --coral-light: #FF8AB0;
+    --mint: #34D399;
+    --mint-light: #6EE7B7;
+    --purple: #A78BFA;
+    --purple-light: #C4B5FD;
+    --cyan: #22D3EE;
+    --gold: #FBBF24;
+    --text: #FFFFFF;
+    --text-body: #CDD3EC;
+    --text-soft: #9BA3C5;
+    --slate: #6E789C;
+  }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100dvh;
+    width: 100vw;
+  }
+
+  #root { height: 100%; width: 100%; }
+
+  .noise-overlay {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat; background-size: 256px 256px;
+  }
+
+  .grid-bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.035;
+    background-image:
+      linear-gradient(rgba(167,139,250,0.4) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(167,139,250,0.4) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .glow-1, .glow-2 {
+    position: fixed; pointer-events: none; z-index: 0;
+    border-radius: 50%; filter: blur(120px); opacity: 0.18;
+  }
+  .glow-1 { top: -200px; left: -200px; width: 700px; height: 700px; background: var(--coral); }
+  .glow-2 { bottom: -200px; right: -200px; width: 700px; height: 700px; background: var(--purple); }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-60px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.04); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .animate-in { animation: fadeInUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
+  .animate-fade { animation: fadeIn 0.8s ease forwards; opacity: 0; }
+  .animate-scale { animation: scaleIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
+  .animate-left { animation: slideInLeft 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; opacity: 0; }
+
+  .delay-1 { animation-delay: 0.08s; }
+  .delay-2 { animation-delay: 0.18s; }
+  .delay-3 { animation-delay: 0.30s; }
+  .delay-4 { animation-delay: 0.42s; }
+  .delay-5 { animation-delay: 0.55s; }
+  .delay-6 { animation-delay: 0.68s; }
+  .delay-7 { animation-delay: 0.82s; }
+  .delay-8 { animation-delay: 0.96s; }
+  .delay-9 { animation-delay: 1.10s; }
+  .delay-10 { animation-delay: 1.24s; }
+
+  .slide-container {
+    position: relative; width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 56px 60px 80px;
+    overflow-y: auto;
+  }
+  .slide-inner {
+    max-width: 1180px; width: 100%;
+    position: relative; z-index: 1;
+  }
+
+  .font-display { font-family: 'DM Serif Display', serif; font-weight: 400; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+  .section-label {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; font-weight: 500;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--coral-light); margin-bottom: 18px;
+  }
+  .section-label::before {
+    content: ''; display: block; width: 4px; height: 18px;
+    background: linear-gradient(to bottom, var(--coral), var(--coral-light));
+    border-radius: 2px;
+  }
+
+  /* Stat card */
+  .stat-card {
+    background: linear-gradient(135deg, rgba(30,35,73,0.55), rgba(19,23,52,0.7));
+    border: 1px solid rgba(167,139,250,0.14);
+    border-radius: 18px; padding: 30px 24px;
+    text-align: center; position: relative; overflow: hidden;
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255,79,132,0.4);
+  }
+  .stat-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--coral), transparent);
+    opacity: 0; transition: opacity 0.3s ease;
+  }
+  .stat-card:hover::after { opacity: 1; }
+  .stat-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 3rem; line-height: 1;
+    background: linear-gradient(135deg, var(--coral) 0%, var(--purple) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 8px;
+  }
+  .stat-label {
+    font-weight: 600; font-size: 0.88rem; color: var(--text);
+    letter-spacing: 0.02em; margin-bottom: 4px;
+  }
+  .stat-sub { font-size: 0.78rem; color: var(--text-soft); font-style: italic; }
+
+  /* Pill-tag */
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 5px 12px; border-radius: 999px;
+    border: 1px solid;
+  }
+
+  /* Tier card (P0/P1/P2) */
+  .tier-card {
+    position: relative; padding: 22px; border-radius: 16px;
+    background: linear-gradient(145deg, rgba(30,35,73,0.45), rgba(11,14,34,0.6));
+    border: 1px solid rgba(167,139,250,0.12);
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: pointer; overflow: hidden;
+  }
+  .tier-card:hover {
+    border-color: rgba(255,79,132,0.35);
+    transform: translateY(-3px);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+  }
+  .tier-card.active {
+    border-color: var(--coral);
+    box-shadow: 0 0 28px rgba(255,79,132,0.2);
+    background: linear-gradient(145deg, rgba(255,79,132,0.10), rgba(11,14,34,0.7));
+  }
+
+  .check-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 11px 14px; border-radius: 10px;
+    background: rgba(52,211,153,0.05);
+    border: 1px solid rgba(52,211,153,0.10);
+    transition: all 0.25s ease;
+  }
+  .check-row:hover {
+    background: rgba(52,211,153,0.10);
+    border-color: rgba(52,211,153,0.25);
+    transform: translateX(3px);
+  }
+  .check-icon {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--mint), var(--mint-light));
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+    color: #0B0E22; font-weight: 700; font-size: 0.7rem;
+  }
+  .check-row .row-cat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--mint-light);
+    margin-right: 10px;
+  }
+  .check-row .row-text {
+    color: var(--text-body); font-size: 0.86rem; line-height: 1.55;
+  }
+
+  /* Bonus feature card */
+  .bonus-card {
+    position: relative; padding: 22px; border-radius: 16px;
+    background: linear-gradient(145deg, rgba(167,139,250,0.10), rgba(11,14,34,0.7));
+    border: 1px solid rgba(167,139,250,0.22);
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .bonus-card:hover {
+    border-color: rgba(255,79,132,0.45);
+    transform: translateY(-4px);
+    box-shadow: 0 22px 60px rgba(0,0,0,0.35);
+  }
+  .bonus-card::before {
+    content: 'BONUS'; position: absolute; top: 14px; right: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem; letter-spacing: 0.18em;
+    padding: 3px 8px; border-radius: 999px;
+    background: linear-gradient(135deg, var(--coral), var(--purple));
+    color: white; font-weight: 600;
+  }
+  .bonus-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; margin-bottom: 14px;
+    background: linear-gradient(135deg, rgba(255,79,132,0.2), rgba(167,139,250,0.2));
+    border: 1px solid rgba(167,139,250,0.3);
+  }
+  .bonus-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.18rem; margin-bottom: 8px; color: var(--text);
+  }
+  .bonus-desc {
+    font-size: 0.86rem; line-height: 1.65; color: var(--text-body);
+  }
+
+  /* Callout */
+  .callout {
+    padding: 20px 22px; border-radius: 14px; margin-top: 22px;
+    background: linear-gradient(135deg, rgba(255,79,132,0.10), rgba(167,139,250,0.06));
+    border: 1px solid rgba(255,79,132,0.22);
+  }
+  .callout-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.18em;
+    color: var(--coral-light); text-transform: uppercase; margin-bottom: 8px;
+  }
+  .callout p { font-size: 0.92rem; line-height: 1.7; color: var(--text-body); }
+
+  .highlight {
+    display: inline-block; padding: 2px 9px; border-radius: 6px;
+    background: rgba(255,79,132,0.15); color: var(--coral-light);
+    font-family: 'JetBrains Mono', monospace; font-weight: 500;
+    font-size: 0.95em;
+  }
+  .highlight-mint {
+    display: inline-block; padding: 2px 9px; border-radius: 6px;
+    background: rgba(52,211,153,0.15); color: var(--mint-light);
+    font-family: 'JetBrains Mono', monospace; font-weight: 500;
+    font-size: 0.95em;
+  }
+  .highlight-gold {
+    display: inline-block; padding: 2px 9px; border-radius: 6px;
+    background: rgba(251,191,36,0.15); color: var(--gold);
+    font-family: 'JetBrains Mono', monospace; font-weight: 500;
+    font-size: 0.95em;
+  }
+
+  /* Roadmap timeline */
+  .roadmap-step {
+    display: flex; gap: 18px; align-items: flex-start;
+    padding: 18px 22px; border-radius: 14px;
+    background: linear-gradient(135deg, rgba(30,35,73,0.4), rgba(11,14,34,0.5));
+    border: 1px solid rgba(167,139,250,0.12);
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  .roadmap-step:hover {
+    border-color: rgba(255,79,132,0.35);
+    background: linear-gradient(135deg, rgba(255,79,132,0.08), rgba(11,14,34,0.5));
+    transform: translateX(4px);
+  }
+  .roadmap-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.7rem; line-height: 1;
+    background: linear-gradient(135deg, var(--coral), var(--purple));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    flex-shrink: 0; width: 44px;
+  }
+
+  /* Demo URL card */
+  .demo-card {
+    padding: 32px 36px; border-radius: 20px;
+    background:
+      linear-gradient(135deg, rgba(255,79,132,0.10), rgba(167,139,250,0.10)),
+      var(--bg-card);
+    border: 1px solid rgba(255,79,132,0.30);
+    position: relative; overflow: hidden;
+  }
+  .demo-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--coral), var(--purple), var(--cyan));
+    background-size: 200% 100%; animation: shimmer 4s linear infinite;
+  }
+
+  .copy-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 10px;
+    background: rgba(167,139,250,0.12);
+    border: 1px solid rgba(167,139,250,0.3);
+    color: var(--purple-light); font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem; cursor: pointer; transition: all 0.25s ease;
+  }
+  .copy-btn:hover {
+    background: rgba(167,139,250,0.20);
+    border-color: rgba(167,139,250,0.5);
+  }
+  .copy-btn.copied {
+    background: rgba(52,211,153,0.20);
+    border-color: rgba(52,211,153,0.5);
+    color: var(--mint-light);
+  }
+
+  /* Analytics dashboard mock */
+  .dash-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 16px;
+  }
+  .dash-tile {
+    padding: 16px; border-radius: 12px;
+    background: linear-gradient(145deg, rgba(30,35,73,0.55), rgba(11,14,34,0.65));
+    border: 1px solid rgba(167,139,250,0.14);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .dash-tile:hover {
+    border-color: rgba(255,79,132,0.4);
+    transform: translateY(-3px);
+  }
+  .dash-tile-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-soft); margin-bottom: 8px;
+  }
+  .dash-tile-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem; line-height: 1; margin-bottom: 4px;
+    color: var(--text);
+  }
+  .dash-tile-trend {
+    font-size: 0.72rem; color: var(--mint-light);
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .dash-tile-trend.down { color: var(--coral-light); }
+
+  /* Bar chart */
+  .bar-chart {
+    display: flex; align-items: flex-end; gap: 6px;
+    height: 90px; padding: 14px 16px 0;
+    border-radius: 12px;
+    background: linear-gradient(145deg, rgba(30,35,73,0.45), rgba(11,14,34,0.55));
+    border: 1px solid rgba(167,139,250,0.12);
+  }
+  .bar {
+    flex: 1; border-radius: 4px 4px 0 0;
+    background: linear-gradient(to top, var(--coral), var(--purple));
+    transition: all 0.3s ease;
+    position: relative; min-height: 6px;
+    cursor: pointer;
+  }
+  .bar:hover {
+    background: linear-gradient(to top, var(--coral-light), var(--purple-light));
+    transform: scaleY(1.05); transform-origin: bottom;
+  }
+  .bar:hover::after {
+    content: attr(data-value); position: absolute;
+    top: -22px; left: 50%; transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    color: var(--coral-light); white-space: nowrap;
+  }
+
+  /* Multi-part interactive product diagram */
+  .product-diagram {
+    display: flex; align-items: center; justify-content: center;
+    gap: 28px;
+  }
+  .product-svg {
+    width: 280px; height: 280px;
+  }
+  .part-region {
+    cursor: pointer; transition: all 0.35s ease;
+  }
+  .part-region:hover {
+    filter: brightness(1.2);
+  }
+
+  /* Undo timeline */
+  .timeline-track {
+    display: flex; align-items: center; gap: 4px; padding: 16px 4px;
+    overflow-x: auto;
+  }
+  .timeline-step {
+    flex-shrink: 0; padding: 8px 14px; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+    background: rgba(30,35,73,0.5);
+    border: 1px solid rgba(167,139,250,0.14);
+    color: var(--text-body); cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+  }
+  .timeline-step.current {
+    background: linear-gradient(135deg, var(--coral), var(--purple));
+    border-color: transparent; color: white;
+    box-shadow: 0 4px 18px rgba(255,79,132,0.4);
+  }
+  .timeline-step.future {
+    opacity: 0.45;
+  }
+  .timeline-step:not(.current):hover {
+    border-color: rgba(255,79,132,0.4);
+    color: var(--text);
+  }
+
+  /* Bottom navigation */
+  .progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px; z-index: 100;
+    background: linear-gradient(90deg, var(--coral), var(--purple));
+    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 0 12px rgba(255,79,132,0.5);
+  }
+
+  .nav-dots {
+    position: fixed; right: 28px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 10px; z-index: 100;
+  }
+  .nav-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(155,163,197,0.2); border: none; cursor: pointer;
+    transition: all 0.3s ease; position: relative;
+  }
+  .nav-dot.active {
+    background: var(--coral);
+    box-shadow: 0 0 12px rgba(255,79,132,0.6);
+    transform: scale(1.3);
+  }
+  .nav-dot:hover:not(.active) {
+    background: rgba(155,163,197,0.5); transform: scale(1.15);
+  }
+  .nav-dot-label {
+    position: absolute; right: 22px; top: 50%; transform: translateY(-50%);
+    white-space: nowrap; font-size: 0.7rem; color: var(--text-soft);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em;
+    background: rgba(11,14,34,0.85); padding: 4px 10px; border-radius: 6px;
+    border: 1px solid rgba(167,139,250,0.15);
+  }
+  .nav-dot:hover .nav-dot-label { opacity: 1; }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 36px;
+    background: linear-gradient(to top, rgba(11,14,34,0.95), transparent);
+  }
+  .nav-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px; border-radius: 10px;
+    font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 0.85rem;
+    border: 1px solid rgba(167,139,250,0.22); background: rgba(30,35,73,0.4);
+    color: var(--text-body); cursor: pointer;
+    transition: all 0.3s ease; backdrop-filter: blur(10px);
+  }
+  .nav-btn:hover {
+    border-color: rgba(167,139,250,0.4);
+    background: rgba(30,35,73,0.6);
+    color: var(--text);
+  }
+  .nav-btn.primary {
+    background: linear-gradient(135deg, var(--coral), var(--purple));
+    border-color: transparent; color: white;
+  }
+  .nav-btn.primary:hover {
+    box-shadow: 0 4px 20px rgba(255,79,132,0.4);
+    transform: translateY(-1px);
+  }
+  .nav-btn:disabled {
+    opacity: 0.3; cursor: not-allowed; transform: none !important;
+    box-shadow: none !important;
+  }
+  .slide-counter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem; color: var(--text-soft); letter-spacing: 0.1em;
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.25); border-radius: 5px; }
+
+  /* Compact list */
+  .clean-list {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .clean-list-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    font-size: 0.88rem; color: var(--text-body); line-height: 1.65;
+  }
+  .clean-list-item::before {
+    content: '→'; color: var(--coral); font-weight: 700;
+    flex-shrink: 0; margin-top: 1px;
+  }
+
+  @media (max-width: 900px) {
+    .slide-container { padding: 36px 22px 80px; }
+    .nav-dots { display: none; }
+    .bottom-nav { padding: 12px 18px; }
+    .dash-grid { grid-template-columns: repeat(2, 1fr); }
+    .product-diagram { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+const SLIDES = [
+  { id: 'hero', label: 'Cover' },
+  { id: 'summary', label: 'Executive Summary' },
+  { id: 'delivered', label: 'What Was Delivered' },
+  { id: 'multipart', label: 'Multi-Part Customizer' },
+  { id: 'bonus-cx', label: 'Bonus · Customer UX' },
+  { id: 'bonus-owner', label: 'Bonus · Owner Self-Serve' },
+  { id: 'bonus-analytics', label: 'Bonus · Analytics' },
+  { id: 'demo', label: 'Live Demo' },
+  { id: 'roadmap', label: 'Q2 Roadmap' },
+  { id: 'team', label: 'Team & Budget' },
+  { id: 'closing', label: 'Closing' },
+];
+
+// ─── Animated Counter ───
+function AnimatedNumber({ value, prefix = '', suffix = '', delay = 0, duration = 1200 }) {
+  const [display, setDisplay] = useState(0);
+  const [started, setStarted] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setStarted(true), delay); return () => clearTimeout(t); }, [delay]);
+  useEffect(() => {
+    if (!started) return;
+    const num = parseFloat(String(value).replace(/[^0-9.]/g, ''));
+    if (isNaN(num)) { setDisplay(value); return; }
+    let step = 0; const steps = 40;
+    const interval = setInterval(() => {
+      step++;
+      const eased = 1 - Math.pow(1 - step / steps, 3);
+      setDisplay(Number.isInteger(num) ? Math.round(num * eased) : (num * eased).toFixed(1));
+      if (step >= steps) { setDisplay(num); clearInterval(interval); }
+    }, duration / 40);
+    return () => clearInterval(interval);
+  }, [started, value, duration]);
+  return <span>{prefix}{started ? display : 0}{suffix}</span>;
+}
+
+// ═══════════════════ SLIDE 1: HERO ═══════════════════
+function HeroSlide() {
+  return (
+    <div className="slide-container" style={{ background: 'radial-gradient(ellipse at 30% 40%, rgba(255,79,132,0.12), transparent 70%)' }}>
+      <div className="slide-inner" style={{ textAlign: 'center', maxWidth: 920 }}>
+        <div className="animate-fade delay-1" style={{ marginBottom: 28 }}>
+          <span className="pill" style={{
+            color: 'var(--coral-light)',
+            borderColor: 'rgba(255,79,132,0.3)',
+            background: 'rgba(255,79,132,0.08)'
+          }}>
+            <span style={{
+              display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
+              background: 'var(--coral)', animation: 'pulse 2s ease-in-out infinite'
+            }} />
+            Q1 2026 Shareholder Update
+          </span>
+        </div>
+
+        <h1 className="font-display animate-in delay-2" style={{
+          fontSize: 'clamp(2.6rem, 6vw, 4.6rem)', lineHeight: 1.1, marginBottom: 18
+        }}>
+          The <span style={{
+            background: 'linear-gradient(135deg, var(--coral), var(--purple))',
+            WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent'
+          }}>Customization Plugin</span><br />
+          is functionally complete.
+        </h1>
+
+        <p className="animate-in delay-3" style={{
+          fontSize: '1.1rem', color: 'var(--text-soft)', maxWidth: 680,
+          margin: '0 auto 36px', lineHeight: 1.7, fontStyle: 'italic'
+        }}>
+          A product personalization tool for the Koriqo Shopify storefront. Visual in-browser
+          customization across multiple product parts, optional AI-assisted design, factory-ready output.
+        </p>
+
+        <div className="animate-in delay-5" style={{
+          display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8
+        }}>
+          {[
+            { label: '100% backlog delivered', color: 'mint' },
+            { label: 'Bonus features shipped', color: 'coral' },
+            { label: 'Pre-launch ready', color: 'purple' }
+          ].map((tag, i) => (
+            <span key={i} className="pill" style={{
+              color: tag.color === 'mint' ? 'var(--mint-light)' : tag.color === 'coral' ? 'var(--coral-light)' : 'var(--purple-light)',
+              borderColor: tag.color === 'mint' ? 'rgba(52,211,153,0.35)' : tag.color === 'coral' ? 'rgba(255,79,132,0.35)' : 'rgba(167,139,250,0.35)',
+              background: tag.color === 'mint' ? 'rgba(52,211,153,0.08)' : tag.color === 'coral' ? 'rgba(255,79,132,0.08)' : 'rgba(167,139,250,0.08)'
+            }}>{tag.label}</span>
+          ))}
+        </div>
+
+        <div className="animate-fade delay-7" style={{
+          marginTop: 56, color: 'var(--text-soft)', fontSize: '0.74rem',
+          fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.12em'
+        }}>
+          ← → ARROW KEYS · CLICK BELOW · OR USE THE DOTS ON THE RIGHT
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ SLIDE 2: EXECUTIVE SUMMARY ═══════════════════
+function SummarySlide() {
+  return (
+    <div className="slide-container">
+      <div className="slide-inner">
+        <div className="section-label animate-in">Executive Summary</div>
+        <h2 className="font-display animate-in delay-1" style={{
+          fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', marginBottom: 20, lineHeight: 1.25
+        }}>
+          Q1 closed with the <span style={{ color: 'var(--coral-light)' }}>full backlog delivered</span>{' '}
+          plus a meaningful set of <span style={{ color: 'var(--mint-light)' }}>bonus features</span> beyond the original scope.
+        </h2>
+
+        <p className="animate-in delay-2" style={{
+          fontSize: '1.02rem', lineHeight: 1.75, color: 'var(--text-body)',
+          maxWidth: 880, marginBottom: 32
+        }}>
+          The plugin lets Koriqo customers visually customize products in-browser — across multiple parts of a single
+          product, with optional AI-assisted design — and automatically converts the result into a print-ready file
+          for the factory.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+          {[
+            { num: '100', suffix: '%', label: 'P0 / P1 / P2 backlog', sub: 'every planned item shipped', delay: 200 },
+            { num: '13', suffix: '+', label: 'Bonus features', sub: 'beyond original scope', delay: 400 },
+            { num: '50', suffix: ' steps', label: 'Undo / redo history', sub: 'configurable, full state', delay: 600 },
+            { num: '500', prefix: '$', suffix: '/mo', label: 'Q2 retainer', sub: 'down from build burn', delay: 800 },
+          ].map((stat, i) => (
+            <div key={i} className={`stat-card animate-scale delay-${i + 3}`}>
+              <div className="stat-number">
+                <AnimatedNumber value={stat.num} prefix={stat.prefix} suffix={stat.suffix} delay={stat.delay} />
+              </div>
+              <div className="stat-label">{stat.label}</div>
+              <div className="stat-sub">{stat.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="callout animate-in delay-7">
+          <div className="callout-label">The Shift Ahead</div>
+          <p>
+            Q2 moves from <strong style={{ color: 'var(--text)' }}>"build"</strong> to{' '}
+            <strong style={{ color: 'var(--coral-light)' }}>"ship"</strong>: production hardening, end-to-end QA,
+            factory integration, and rollout to the live Koriqo Shopify store.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ SLIDE 3: WHAT WAS DELIVERED ═══════════════════
+function DeliveredSlide() {
+  const [activeTier, setActiveTier] = useState(0);
+  const tiers = [
+    {
+      key: 'P0',
+      title: 'Foundation',
+      subtitle: 'Get a working surface in the air',
+      color: 'var(--mint)',
+      colorLight: 'var(--mint-light)',
+      items: [
+        { cat: 'Platform', text: 'Built and styled our own Shopify test store' },
+        { cat: 'Platform', text: 'Deployed the plugin to a working environment' },
+        { cat: 'Product',  text: 'Theme / pre-created pattern library (2K JPEG)' },
+      ]
+    },
+    {
+      key: 'P1',
+      title: 'Core Functionality',
+      subtitle: 'The product loop end-to-end',
+      color: 'var(--purple)',
+      colorLight: 'var(--purple-light)',
+      items: [
+        { cat: 'Engineering', text: 'Source code + GitHub collaboration workflow set up' },
+        { cat: 'Product',     text: 'Print output matches on-screen preview exactly (WYSIWYG parity)' },
+        { cat: 'Product',     text: 'Multi-part customization — one product, many independently customizable areas' },
+        { cat: 'Platform',    text: 'Bring-Your-Own-LLM — customers can plug in their own Gemini account' },
+      ]
+    },
+    {
+      key: 'P2',
+      title: 'Advanced & Production Prep',
+      subtitle: 'Polish, security, and ops foundation',
+      color: 'var(--coral)',
+      colorLight: 'var(--coral-light)',
+      items: [
+        { cat: 'Product',     text: 'AI design filter' },
+        { cat: 'Product',     text: 'Print-ready PDF includes order info on the side panel' },
+        { cat: 'Ops',         text: 'Automatic QC (quality control) sheet generation' },
+        { cat: 'Platform',    text: 'Designs auto-archived to AWS S3, structured /year/month/date/orderNumber' },
+        { cat: 'Security',    text: 'Rate limiting (15 generations / user / day, configurable)' },
+        { cat: 'Security',    text: 'Plugin restricted to registered Shopify users only' },
+        { cat: 'Engineering', text: 'Production-grade infra: alerts, metrics, logs, autoscaling, isolation' },
+      ]
+    },
+  ];
+
+  const tier = tiers[activeTier];
+
+  return (
+    <div className="slide-container">
+      <div className="slide-inner">
+        <div className="section-label animate-in">Q1 — What Was Delivered</div>
+        <h2 className="font-display animate-in delay-1" style={{ fontSize: 'clamp(1.6rem, 2.8vw, 2.1rem)', marginBottom: 6 }}>
+          Three tiers of work. <span style={{ color: 'var(--mint-light)' }}>All shipped.</span>
+        </h2>
+        <p className="animate-in delay-2" style={{ color: 'var(--text-soft)', marginBottom: 22, fontSize: '0.95rem' }}>
+          Click a tier to expand the line items.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 22 }}>
+          {tiers.map((t, i) => (
+            <div
+              key={i}
+              className={`tier-card animate-scale delay-${i + 3} ${activeTier === i ? 'active' : ''}`}
+              onClick={() => setActiveTier(i)}
+              style={activeTier === i ? { borderColor: t.color } : {}}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span className="font-mono" style={{
+                  fontSize: '0.7rem', letterSpacing: '0.18em',
+                  color: t.colorLight, fontWeight: 600
+                }}>
+                  {t.key}
+                </span>
+                <span className="check-icon" style={{ width: 22, height: 22, fontSize: '0.78rem' }}>✓</span>
+              </div>
+              <div className="font-display" style={{ fontSize: '1.18rem', marginBottom: 4 }}>{t.title}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-soft)' }}>{t.subtitle}</div>
+              <div style={{
+                marginTop: 12, fontFamily: "'JetBrains Mono', monospace",
+                fontSize: '0.7rem', color: t.colorLight, letterSpacing: '0.08em'
+              }}>
+                {t.items.length} items shipped →
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="animate-fade" key={`tier-${activeTier}`} style={{
+          padding: 22, borderRadius: 16,
+          background: 'linear-gradient(145deg, rgba(30,35,73,0.5), rgba(11,14,34,0.6))',
+          border: `1px solid ${tier.color}55`
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <div className="font-mono" style={{
+              fontSize: '0.7rem', letterSpacing: '0.18em', color: tier.colorLight, fontWeight: 600
+            }}>{tier.key} ·</div>
+            <div className="font-display" style={{ fontSize: '1.15rem' }}>{tier.title}</div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+            {tier.items.map((item, i) => (
+              <div key={i} className="check-row" style={{ animationDelay: `${i * 60}ms` }}>
+                <span className="check-icon">✓</span>
+                <div style={{ flex: 1 }}>
+                  <span className="row-cat">{item.cat}</span>
+                  <span className="row-text">{item.text}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ SLIDE 4: MULTI-PART CUSTOMIZER (interactive) ═══════════════════
+function MultiPartSlide() {
+  const [activePart, setActivePart] = useState('body');
+  const parts = {
+    body:   { label: 'Body',   color: '#A78BFA', desc: 'AI-generated pattern, full coverage' },
+    handle: { label: 'Handle', color: '#FF4F84', desc: 'Solid color from palette' },
+    lid:    { label: 'Lid',    color: '#34D399', desc: 'Customer-uploaded photo' },
+  };
+  const active = parts[activePart];
+
+  return (
+    <div className="slide-container">
+      <div className="slide-inner">
+        <div className="section-label animate-in">Star Capability · P1</div>
+        <h2 className="font-display animate-in delay-1" style={{
+          fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', marginBottom: 12
+        }}>
+          One product. <span style={{ color: 'var(--coral-light)' }}>Many independently<br />customizable parts.</span>
+        </h2>
+        <p className="animate-in delay-2" style={{
+          fontSize: '1rem', color: 'var(--text-body)', lineHeight: 1.7, marginBottom: 28, maxWidth: 760
+        }}>
+          Click any part to select it. Each part holds its own colors, AI generations, uploads, and history —
+          and the print output mirrors the preview exactly.
+        </p>
+
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 36, alignItems: 'center'
+        }} className="animate-scale delay-3">
+          {/* SVG Mug */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <svg viewBox="0 0 320 320" className="product-svg" style={{ width: 280, height: 280 }}>
+              <defs>
+                <linearGradient id="bodyGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#A78BFA" />
+                  <stop offset="100%" stopColor="#7C3AED" />
+                </linearGradient>
+                <pattern id="bodyPattern" patternUnits="userSpaceOnUse" width="20" height="20">
+                  <rect width="20" height="20" fill="url(#bodyGrad)"/>
+                  <circle cx="10" cy="10" r="3" fill="rgba(255,255,255,0.18)"/>
+                </pattern>
+                <radialGradient id="lidGrad" cx="0.5" cy="0.4" r="0.6">
+                  <stop offset="0%" stopColor="#6EE7B7"/>
+                  <stop offset="100%" stopColor="#10B981"/>
+                </radialGradient>
+              </defs>
+              {/* Lid */}
+              <ellipse
+                cx="160" cy="80" rx="80" ry="20"
+                fill="url(#lidGrad)"
+                stroke={activePart === 'lid' ? '#FBBF24' : 'rgba(255,255,255,0.15)'}
+                strokeWidth={activePart === 'lid' ? 4 : 1}
+                strokeDasharray={activePart === 'lid' ? '6 4' : '0'}
+                onClick={() => setActivePart('lid')}
+                className="part-region"
+                style={{ filter: activePart === 'lid' ? 'drop-shadow(0 0 16px rgba(251,191,36,0.6))' : 'none' }}
+              />
+              {/* Body */}
+              <path
+                d="M 90 80 Q 90 240 110 270 Q 160 285 210 270 Q 230 240 230 80 Z"
+                fill="url(#bodyPattern)"
+                stroke={activePart === 'body' ? '#FBBF24' : 'rgba(255,255,255,0.15)'}
+                strokeWidth={activePart === 'body' ? 4 : 1}
+                strokeDasharray={activePart === 'body' ? '6 4' : '0'}
+                onClick={() => setActivePart('body')}
+                className="part-region"
+                style={{ filter: activePart === 'body' ? 'drop-shadow(0 0 18px rgba(251,191,36,0.5))' : 'none' }}
+              />
+              {/* Handle */}
+              <path
+                d="M 230 130 Q 285 130 285 180 Q 285 230 230 230"
+                fill="none"
+                stroke={activePart === 'handle' ? '#FBBF24' : '#FF4F84'}
+                strokeWidth={activePart === 'handle' ? 22 : 18}
+                strokeLinecap="round"
+                onClick={() => setActivePart('handle')}
+                className="part-region"
+                style={{ filter: activePart === 'handle' ? 'drop-shadow(0 0 18px rgba(251,191,36,0.6))' : 'none' }}
+              />
+            </svg>
+          </div>
+
+          {/* Side panel */}
+          <div>
+            <div className="font-mono" style={{
+              fontSize: '0.7rem', letterSpacing: '0.16em',
+              color: 'var(--coral-light)', textTransform: 'uppercase', marginBottom: 8
+            }}>
+              Selected Part
+            </div>
+            <div className="font-display" style={{
+              fontSize: '2.2rem', marginBottom: 4, color: active.color
+            }}>{active.label}</div>
+            <div style={{ fontSize: '0.95rem', color: 'var(--text-body)', marginBottom: 24 }}>
+              {active.desc}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {Object.entries(parts).map(([key, p]) => (
+                <button
+                  key={key}
+                  onClick={() => setActivePart(key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+                    background: activePart === key ? 'rgba(251,191,36,0.10)' : 'rgba(30,35,73,0.4)',
+                    border: `1px solid ${activePart === key ? 'rgba(251,191,36,0.4)' : 'rgba(167,139,250,0.14)'}`,
+                    color: 'var(--text)', fontFamily: 'Outfit', fontSize: '0.9rem',
+                    transition: 'all 0.25s ease', textAlign: 'left'
+                  }}>
+                  <span style={{
+                    width: 14, height: 14, borderRadius: 4, background: p.color,
+                    boxShadow: activePart === key ? `0 0 10px ${p.color}` : 'none'
+                  }} />
+                  <span style={{ fontWeight: 600 }}>{p.label}</span>
+                  <span style={{ marginLeft: 'auto', color: 'var(--text-soft)', fontSize: '0.78rem' }}>
+                    {activePart === key ? 'editing' : 'click to edit'}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div style={{
+              marginTop: 18, padding: 12, borderRadius: 10,
+              background: 'rgba(52,211,153,0.08)',
+              border: '1px solid rgba(52,211,153,0.22)',
+              fontSize: '0.82rem', color: 'var(--mint-light)',
+              fontFamily: "'JetBrains Mono', monospace"
+            }}>
+              ✓ WYSIWYG parity: print = preview, exactly.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ SLIDE 5: BONUS · CUSTOMER UX ═══════════════════
+function BonusCXSlide() {
+  const [historyIdx, setHistoryIdx] = useState(4);
+  const history = [
+    'Open product',
+    'Pick base color',
+    'AI gen v1',
+    'AI gen v2',
+    'Add logo',
+    'Reposition logo',
+    'AI gen v3',
+  ];
+
+  const features = [
+    { icon: '↺', title: 'Undo / Redo with full history',
+      desc: 'Up to 50 steps — colors, AI generations, logo placement, even part selection. Customers can step back through AI iterations and recover an earlier preferred result.' },
+    { icon: '📦', title: 'Export & Import design',
+      desc: 'Save the entire design state to JSON — every color, AI gen, logo position, opacity, per-part config — and re-import it later to resume exactly where they left off.' },
+    { icon: '📷', title: 'Upload your own image',
+      desc: 'Customers can upload a photo as a full-face design and iteratively refine via prompts ("remove the glasses", "add a hat") — a true visual co-design experience.' },
+    { icon: '◎', title: '"Show Selected" indicator',
+      desc: 'Visual highlight on the active part — prevents the common mistake of editing the wrong region. On by default, toggleable.' },
+    { icon: '◧', title: 'Per-part Clear',
+      desc: 'Reset individual parts (just the body, just the handle) without losing work on the others.' },
+  ];
+
+  return (
+    <div className="slide-container">
+      <div className="slide-inner">
+        <div className="section-label animate-in">Beyond the Plan · Customer Experience</div>
+        <h2 className="font-display animate-in delay-1" style={{
+          fontSize: 'clamp(1.5rem, 2.8vw, 2.05rem)', marginBottom: 18
+        }}>
+          Five upgrades that <span style={{ color: 'var(--coral-light)' }}>kill creative friction</span>.
+        </h2>
+
+        {/* Interactive history bar */}
+        <div className="animate-in delay-2" style={{ marginBottom: 22 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-soft)', marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.08em' }}>
+            ↺ TRY IT — click any step to "rewind" the design history
+          </div>
+          <div className="timeline-track" style={{
+            background: 'linear-gradient(135deg, rgba(30,35,73,0.5), rgba(11,14,34,0.5))',
+            border: '1px solid rgba(167,139,250,0.18)', borderRadius: 12, padding: '12px 16px'
+          }}>
+            {history.map((h, i) => (
+              <div key={i}
+                className={`timeline-step ${i === historyIdx ? 'current' : ''} ${i > historyIdx ? 'future' : ''}`}
+                onClick={() => setHistoryIdx(i)}
+              >
+                {String(i + 1).padStart(2, '0')} · {h}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+          {features.map((f, i) => (
+            <div key={i} className={`bonus-card animate-scale delay-${i + 3}`}>
+              <div className="bonus-icon">{f.icon}</div>
+              <div className="bonus-title">{f.title}</div>
+              <div className="bonus-desc">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ SLIDE 6: BONUS · STORE-OWNER SELF-SERVICE ═══════════════════
+function BonusOwnerSlide() {
+  const [step, setStep] = useState(0);
+  const flow = [
+    { label: 'Owner uses customizer', desc: 'Same UI customers use — design a template (colors, AI gens, layout)' },
+    { label: 'Export to JSON', desc: 'One click — full design state captured as a portable file' },
+    { label: 'Upload as predefined', desc: 'Tied to a product type, becomes a one-tap starting point' },
+    { label: 'Customers continue editing', desc: 'Pick a template, then refine — never start from a blank canvas' },
+  ];
+
+  return (
+    <div className="slide-container">
+      <div className="slide-inner">
+        <div className="section-label animate-in">Beyond the Plan · Store-Owner Self-Service</div>
+        <h2 className="font-display animate-in delay-1" style={{
+          fontSize: 'clamp(1.5rem, 2.8vw, 2.05rem)', marginBottom: 14
+        }}>
+          The store owner can author design templates —{' '}
+          <span style={{ color: 'var(--coral-light)' }}>without engineering, without Photoshop.</span>
+        </h2>
+        <p className="animate-in delay-2" style={{
+          fontSize: '1rem', color: 'var(--text-body)', lineHeight: 1.75, maxWidth: 880, marginBottom: 28
+        }}>
+          The original P0 deliverable was a static "pre-created pattern library." This evolved into a full
+          self-service authoring workflow — the business owner runs it independently, ongoing, with no developer
+          involvement.
+        </p>
+
+        <div className="animate-in delay-3" style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10,
+          marginBottom: 22, position: 'relative'
+        }}>
+          {flow.map((s, i) => (
+            <div key={i}
+              onClick={() => setStep(i)}
+              style={{
+                padding: 18, borderRadius: 14, cursor: 'pointer',
+                background: i <= step
+                  ? 'linear-gradient(145deg, rgba(255,79,132,0.14), rgba(167,139,250,0.10))'
+                  : 'linear-gradient(145deg, rgba(30,35,73,0.4), rgba(11,14,34,0.4))',
+                border: `1px solid ${i <= step ? 'rgba(255,79,132,0.4)' : 'rgba(167,139,250,0.14)'}`,
+                transition: 'all 0.4s ease',
+                position: 'relative'
+              }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: 8,
+                background: i <= step
+                  ? 'linear-gradient(135deg, var(--coral), var(--purple))'
+                  : 'rgba(167,139,250,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: 10, fontFamily: "'JetBrains Mono', monospace",
+                fontSize: '0.78rem', fontWeight: 600,
+                color: i <= step ? 'white' : 'var(--text-soft)'
+              }}>
+                {String(i + 1).padStart(2, '0')}
+              </div>
+              <div style={{
+                fontWeight: 600, fontSize: '0.9rem',
+                color: i <= step ? 'var(--text)' : 'var(--text-soft)',
+                marginBottom: 4
+              }}>{s.label}</div>
+              <div style={{
+                fontSize: '0.78rem', lineHeight: 1.55,
+                color: i <= step ? 'var(--text-body)' : 'var(--slate)'
+              }}>{s.desc}</div>
+              {i < flow.length - 1 && (
+                <div style={{
+                  position: 'absolute', right: -10, top: '50%', transform: 'translateY(-50%)',
+                  color: i < step ? 'var(--coral)' : 'var(--slate)',
+                  fontSize: '1.2rem', zIndex: 2
+                }}>→</div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }} className="animate-fade delay-7">
+          <button className="nav-btn" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>← Back</button>
+          <button className="nav-btn primary" onClick={() => setStep(Math.min(flow.length - 1, step + 1))} disabled={step === flow.length - 1}>
+            Walk through →
+          </button>
+        </div>
+
+        <div className="callout animate-in delay-8">
+          <div className="callout-label">Why It Matters</div>
+          <p>
+            Design-template creation becomes a <strong style={{ color: 'var(--text)' }}>no-engineering, no-Photoshop</strong> business workflow.
+            The store can refresh and seasonally update its template library without ever filing a ticket — that's a
+            persistent reduction in operational drag.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ SLIDE 7: BONUS · ANALYTICS DASHBOARD ═══════════════════
+function BonusAnalyticsSlide() {
+  const [activeMetric, setActiveMetric] = useState(0);
+  const tiles = [
+    { label: 'Total tokens', value: '2.4M', trend: '+18%', up: true },
+    { label: 'Generations', value: '8,127', trend: '+24%', up: true },
+    { label: 'Success rate', value: '96.2%', trend: '+1.4%', up: true },
+    { label: 'Rate-limited', value: '47', trend: '-32%', up: true },
+  ];
+
+  // Synthetic 14-day usage trend
+  const usage = [12, 18, 15, 24, 31, 28, 36, 44, 41, 52, 48, 59, 67, 71];
+
+  const recent = [
+    { date: '05-02 14:22', user: 'maya@…', prompt: 'sunset bokeh, warm tones', key: 'sk-***f3a', status: 'OK' },
+    { date: '05-02 14:18', user: 'luca@…', prompt: 'minimal line art mountain', key: 'sk-***c1b', status: 'OK' },
+    { date: '05-02 14:11', user: 'priya@…', prompt: 'abstract waves, navy + gold', key: 'sk-***a82', status: 'RATE-LIMIT' },
+    { date: '05-02 14:03', user: 'jin@…', prompt: 'cherry blossom, pastel', key: 'sk-***99e', status: 'OK' },
+    { date: '05-02 13:55', user: 'maya@…', prompt: 'remove the glasses', key: 'sk-***f3a', status: 'OK' },
+  ];
+
+  return (
+    <div className="slide-container">
+      <div className="slide-inner">
+        <div className="section-label animate-in">Beyond the Plan · Operational Visibility</div>
+        <h2 className="font-display animate-in delay-1" style={{
+          fontSize: 'clamp(1.5rem, 2.8vw, 2.05rem)', marginBottom: 14
+        }}>
+          A <span style={{ color: 'var(--coral-light)' }}>built-in analytics dashboard</span> — no third-party setup required.
+        </h2>
+        <p className="animate-in delay-2" style={{
+          fontSize: '0.95rem', color: 'var(--text-body)', lineHeight: 1.7, maxWidth: 860, marginBottom: 22
+        }}>
+          Hover the tiles or bars. The store gets immediate insight into <em>who's using the tool, where it's
+          succeeding, and where abuse or failures are emerging</em>.
+        </p>
+
+        <div className="dash-grid animate-in delay-3">
+          {tiles.map((t, i) => (
+            <div key={i} className="dash-tile" onClick={() => setActiveMetric(i)}
+              style={activeMetric === i ? { borderColor: 'var(--coral)', boxShadow: '0 0 22px rgba(255,79,132,0.18)' } : {}}>
+              <div className="dash-tile-label">{t.label}</div>
+              <div className="dash-tile-value">{t.value}</div>
+              <div className={`dash-tile-trend ${t.up ? '' : 'down'}`}>
+                {t.up ? '▲' : '▼'} {t.trend}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 14 }} className="animate-in delay-4">
+          {/* Daily usage */}
+          <div>
+            <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-soft)', letterSpacing: '0.12em', marginBottom: 6 }}>
+              DAILY USAGE · LAST 14 DAYS
+            </div>
+            <div className="bar-chart">
+              {usage.map((v, i) => (
+                <div key={i} className="bar"
+                  style={{ height: `${(v / Math.max(...usage)) * 100}%` }}
+                  data-value={`${v} gens`} />
+              ))}
+            </div>
+          </div>
+
+          {/* Recent generations */}
+          <div>
+            <div style={{ fontSize: '0.72rem', fontFamily: "'JetBrains Mono', monospace", color: 'var(--text-soft)', letterSpacing: '0.12em', marginBottom: 6 }}>
+              RECENT GENERATIONS
+            </div>
+            <div style={{
+              borderRadius: 12, overflow: 'hidden',
+              background: 'linear-gradient(145deg, rgba(30,35,73,0.45), rgba(11,14,34,0.55))',
+              border: '1px solid rgba(167,139,250,0.12)',
+              fontFamily: "'JetBrains Mono', monospace", fontSize: '0.72rem'
+            }}>
+              {recent.map((r, i) => (
+                <div key={i} style={{
+                  display: 'grid', gridTemplateColumns: '1.1fr 1fr 1.8fr 1fr 0.8fr',
+                  gap: 8, padding: '8px 14px',
+                  borderBottom: i < recent.length - 1 ? '1px solid rgba(167,139,250,0.08)' : 'none',
+                  color: 'var(--text-body)'
+                }}>
+                  <span style={{ color: 'var(--text-soft)' }}>{r.date}</span>
+                  <span>{r.user}</span>
+                  <span style={{ color: 'var(--purple-light)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{r.prompt}"</span>
+                  <span style={{ color: 'var(--text-soft)' }}>{r.key}</span>
+                  <span style={{
+                    color: r.status === 'OK' ? 'var(--mint-light)' : 'var(--coral-light)',
+                    fontWeight: 600
+                  }}>{r.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <p className="animate-fade delay-7" style={{
+          fontSize: '0.78rem', color: 'var(--text-soft)', marginTop: 14,
+          fontStyle: 'italic', textAlign: 'center'
+        }}>
+          Numbers shown are illustrative — the real dashboard reads from production logs.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ SLIDE 8: LIVE DEMO ═══════════════════
+function DemoSlide() {
+  const [copied, setCopied] = useState(false);
+  const url = 'https://quickstart-b56c2230.myshopify.com/';
+  const password = 'demo';
+
+  const copy = (text) => {
+    navigator.clipboard?.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  };
+
+  return (
+    <div className="slide-container" style={{ background: 'radial-gradient(ellipse at 50% 30%, rgba(255,79,132,0.10), transparent 65%)' }}>
+      <div className="slide-inner" style={{ maxWidth: 880 }}>
+        <div className="section-label animate-in">Live Demo</div>
+        <h2 className="font-display animate-in delay-1" style={{
+          fontSize: 'clamp(1.7rem, 3vw, 2.3rem)', marginBottom: 12, lineHeight: 1.25
+        }}>
+          Try the current build <span style={{ color: 'var(--coral-light)' }}>right now.</span>
+        </h2>
+        <p className="animate-in delay-2" style={{
+          color: 'var(--text-body)', fontSize: '1rem', marginBottom: 26, lineHeight: 1.7
+        }}>
+          The customizer is live on a private Shopify storefront. Pick any product, open the
+          customizer, try multi-part editing, AI generation, undo / redo, and templates.
+        </p>
+
+        <div className="demo-card animate-scale delay-3">
+          <div className="font-mono" style={{
+            fontSize: '0.7rem', letterSpacing: '0.16em',
+            color: 'var(--coral-light)', textTransform: 'uppercase', marginBottom: 10
+          }}>
+            STORE URL
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 14, marginBottom: 22, flexWrap: 'wrap'
+          }}>
+            <a href={url} target="_blank" rel="noopener noreferrer" style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 'clamp(0.95rem, 1.6vw, 1.2rem)', color: 'var(--purple-light)',
+              textDecoration: 'underline', wordBreak: 'break-all'
+            }}>{url}</a>
+            <button className={`copy-btn ${copied ? 'copied' : ''}`} onClick={() => copy(url)}>
+              {copied ? '✓ Copied' : 'Copy URL'}
+            </button>
+          </div>
+
+          <div className="font-mono" style={{
+            fontSize: '0.7rem', letterSpacing: '0.16em',
+            color: 'var(--coral-light)', textTransform: 'uppercase', marginBottom: 10
+          }}>
+            ACCESS PASSWORD
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 14, flexWrap: 'wrap'
+          }}>
+            <code style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '1.4rem', padding: '10px 18px', borderRadius: 10,
+              background: 'rgba(255,79,132,0.10)',
+              border: '1px solid rgba(255,79,132,0.25)',
+              color: 'var(--coral-light)', letterSpacing: '0.1em'
+            }}>{password}</code>
+            <button className="copy-btn" onClick={() => copy(password)}>Copy</button>
+          </div>
+
+          <div style={{ marginTop: 24 }}>
+            <a href={url} target="_blank" rel="noopener noreferrer" className="nav-btn primary"
+              style={{ padding: '12px 28px', fontSize: '0.92rem', fontWeight: 600, textDecoration: 'none' }}>
+              Open the live demo →
+            </a>
+          </div>
+        </div>
+
+        <div style={{
+          marginTop: 22, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10
+        }} className="animate-in delay-6">
+          {[
+            'Multi-part editing',
+            'AI generation',
+            'Undo / redo',
+            'Predefined templates'
+          ].map((tag, i) => (
+            <div key={i} style={{
+              padding: '10px 14px', borderRadius: 10, textAlign: 'center',
+              background: 'rgba(167,139,250,0.06)',
+              border: '1px solid rgba(167,139,250,0.18)',
+              fontSize: '0.82rem', color: 'var(--text-body)'
+            }}>
+              <span style={{ color: 'var(--mint-light)', marginRight: 6 }}>✓</span>
+              {tag}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ SLIDE 9: Q2 ROADMAP ═══════════════════
+function RoadmapSlide() {
+  const steps = [
+    { num: '01', title: 'Production Hardening',
+      desc: 'Tighten stability, finish the last mile of monitoring / alerting / capacity, run load and performance testing on top of the production-ready foundation. Evaluate OBJ → GLB conversion to cut 3D model size (currently ~100 MB) for faster loads.' },
+    { num: '02', title: 'End-to-End QA',
+      desc: 'Functional regression, real-world user-flow testing (including edge cases and failure paths), and a security / permissions pass.' },
+    { num: '03', title: 'Factory Integration',
+      desc: 'Establish the file-handoff pipeline with our production factory. Validate that printed output meets color, dimension, and quality standards. Close the loop from order placement to factory pickup.' },
+    { num: '04', title: 'Launch on Koriqo Shopify',
+      desc: 'Migrate and integrate the plugin into the live Koriqo storefront. Coordinate with marketing for launch.' },
+  ];
+
+  return (
+    <div className="slide-container">
+      <div className="slide-inner">
+        <div className="section-label animate-in">Q2 2026 — Roadmap</div>
+        <h2 className="font-display animate-in delay-1" style={{
+          fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', marginBottom: 8, lineHeight: 1.25
+        }}>
+          From <span style={{ color: 'var(--text-soft)' }}>"build"</span> →{' '}
+          <span style={{ color: 'var(--coral-light)' }}>"ship."</span>
+        </h2>
+        <p className="animate-in delay-2" style={{
+          fontSize: '0.98rem', color: 'var(--text-body)', lineHeight: 1.7, marginBottom: 26, maxWidth: 760
+        }}>
+          Four workstreams in priority order. The product is functionally ready — Q2 is the last mile.
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {steps.map((s, i) => (
+            <div key={i} className={`roadmap-step animate-left delay-${i + 3}`}>
+              <div className="roadmap-num">{s.num}</div>
+              <div>
+                <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 4, fontSize: '1.02rem' }}>
+                  {s.title}
+                </div>
+                <div style={{ fontSize: '0.88rem', lineHeight: 1.65, color: 'var(--text-body)' }}>
+                  {s.desc}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="callout animate-in delay-8" style={{ marginTop: 22 }}>
+          <div className="callout-label">Tech recommendation flagged for Q2</div>
+          <p>
+            3D models currently use OBJ (text-based, ~100 MB). Converting to <span className="highlight">GLB</span> —
+            a binary format designed for the web — would substantially reduce file size and improve initial load,
+            especially on slower connections. <strong style={{ color: 'var(--text)' }}>Not blocking launch</strong>;
+            evaluate during the hardening phase.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ SLIDE 10: TEAM & BUDGET ═══════════════════
+function TeamSlide() {
+  return (
+    <div className="slide-container">
+      <div className="slide-inner">
+        <div className="section-label animate-in">Team & Budget</div>
+        <h2 className="font-display animate-in delay-1" style={{
+          fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', marginBottom: 12, lineHeight: 1.25
+        }}>
+          Right-sizing the team for the <span style={{ color: 'var(--coral-light)' }}>operate phase</span>.
+        </h2>
+        <p className="animate-in delay-2" style={{
+          fontSize: '1rem', color: 'var(--text-body)', lineHeight: 1.75, maxWidth: 820, marginBottom: 28
+        }}>
+          With active development complete, the collaborating developer transitions from full build mode to
+          maintenance — preserving support coverage at a fraction of build-phase cost.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 1fr', alignItems: 'center', gap: 10 }} className="animate-scale delay-3">
+          {/* Build mode */}
+          <div style={{
+            padding: 24, borderRadius: 16,
+            background: 'linear-gradient(145deg, rgba(30,35,73,0.45), rgba(11,14,34,0.55))',
+            border: '1px solid rgba(167,139,250,0.18)'
+          }}>
+            <div className="font-mono" style={{
+              fontSize: '0.66rem', letterSpacing: '0.18em',
+              color: 'var(--text-soft)', textTransform: 'uppercase', marginBottom: 10
+            }}>Q1 · BUILD MODE</div>
+            <div className="font-display" style={{
+              fontSize: '2rem', marginBottom: 8, color: 'var(--text-soft)',
+              textDecoration: 'line-through', textDecorationColor: 'rgba(255,79,132,0.5)'
+            }}>Full burn</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>
+              Full-time developer scope for foundation, core functionality, advanced features, and bonus shipments.
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center', fontSize: '2rem', color: 'var(--coral)' }}>→</div>
+
+          {/* Operate mode */}
+          <div style={{
+            padding: 24, borderRadius: 16,
+            background: 'linear-gradient(145deg, rgba(255,79,132,0.12), rgba(167,139,250,0.10))',
+            border: '1px solid rgba(255,79,132,0.35)',
+            position: 'relative', overflow: 'hidden'
+          }}>
+            <div className="font-mono" style={{
+              fontSize: '0.66rem', letterSpacing: '0.18em',
+              color: 'var(--coral-light)', textTransform: 'uppercase', marginBottom: 10
+            }}>Q2 · OPERATE MODE</div>
+            <div className="font-display" style={{
+              fontSize: '2.4rem', marginBottom: 8,
+              background: 'linear-gradient(135deg, var(--coral), var(--purple))',
+              WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent'
+            }}>$500/mo</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-body)', lineHeight: 1.6 }}>
+              Retainer through launch, at minimum. Bug fixes, factory integration support, rapid response during the
+              critical pre-launch window.
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 26 }} className="animate-in delay-7">
+          <div className="font-mono" style={{
+            fontSize: '0.7rem', letterSpacing: '0.16em',
+            color: 'var(--text-soft)', textTransform: 'uppercase', marginBottom: 10
+          }}>RETAINER SCOPE</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            {[
+              { t: 'Bug fixes', d: 'Prod issue triage and patches' },
+              { t: 'Factory integration support', d: 'File-handoff pipeline assistance' },
+              { t: 'Rapid response', d: 'Pre-launch critical-window cover' },
+            ].map((x, i) => (
+              <div key={i} style={{
+                padding: 14, borderRadius: 12,
+                background: 'rgba(167,139,250,0.06)',
+                border: '1px solid rgba(167,139,250,0.18)'
+              }}>
+                <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.92rem', marginBottom: 4 }}>{x.t}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-soft)' }}>{x.d}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="callout animate-in delay-8" style={{ marginTop: 22 }}>
+          <div className="callout-label">The clean transition</div>
+          <p>
+            This protects continuity of technical support during the most sensitive phase of the project while{' '}
+            <strong style={{ color: 'var(--coral-light)' }}>substantially reducing burn</strong> — a clean shift
+            from build-phase to operate-phase resourcing.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ SLIDE 11: CLOSING ═══════════════════
+function ClosingSlide() {
+  return (
+    <div className="slide-container" style={{ background: 'radial-gradient(ellipse at 60% 50%, rgba(167,139,250,0.10), transparent 65%)' }}>
+      <div className="slide-inner" style={{ maxWidth: 860 }}>
+        <div className="section-label animate-in">In Summary</div>
+        <h2 className="font-display animate-in delay-1" style={{
+          fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', marginBottom: 24, lineHeight: 1.2
+        }}>
+          The product is <span style={{ color: 'var(--mint-light)' }}>functionally ready</span>.<br />
+          Q2 is the <span style={{ color: 'var(--coral-light)' }}>last mile to revenue</span>.
+        </h2>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 28 }}>
+          <div className="animate-left delay-2" style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <span style={{
+              flexShrink: 0, width: 26, height: 26, borderRadius: 8,
+              background: 'linear-gradient(135deg, var(--mint), var(--mint-light))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#0B0E22', fontWeight: 700
+            }}>✓</span>
+            <div style={{ fontSize: '0.98rem', color: 'var(--text-body)', lineHeight: 1.7 }}>
+              <strong style={{ color: 'var(--text)' }}>Q1 closed at 100%</strong> of the planned P0–P2 backlog plus a meaningful
+              set of bonus features across customer experience, store-owner self-service, and operational visibility.
+            </div>
+          </div>
+          <div className="animate-left delay-3" style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <span style={{
+              flexShrink: 0, width: 26, height: 26, borderRadius: 8,
+              background: 'linear-gradient(135deg, var(--coral), var(--coral-light))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#0B0E22', fontWeight: 700
+            }}>→</span>
+            <div style={{ fontSize: '0.98rem', color: 'var(--text-body)', lineHeight: 1.7 }}>
+              <strong style={{ color: 'var(--text)' }}>Q2 focuses on three things</strong> standing between us and revenue:
+              hardening, factory integration, and going live on the Koriqo Shopify store.
+            </div>
+          </div>
+          <div className="animate-left delay-4" style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <span style={{
+              flexShrink: 0, width: 26, height: 26, borderRadius: 8,
+              background: 'linear-gradient(135deg, var(--purple), var(--purple-light))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#0B0E22', fontWeight: 700
+            }}>$</span>
+            <div style={{ fontSize: '0.98rem', color: 'var(--text-body)', lineHeight: 1.7 }}>
+              <strong style={{ color: 'var(--text)' }}>The team is being right-sized</strong> for this phase — the developer
+              moves to a <span className="highlight">$500/month retainer</span> that preserves support coverage at a
+              fraction of the build-phase cost.
+            </div>
+          </div>
+        </div>
+
+        <div className="animate-fade delay-6" style={{
+          textAlign: 'center', padding: '32px 0 0',
+          borderTop: '1px solid rgba(167,139,250,0.15)'
+        }}>
+          <div className="font-display" style={{
+            fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
+            background: 'linear-gradient(135deg, var(--coral), var(--purple))',
+            WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
+            lineHeight: 1.25
+          }}>
+            Build is done.<br />Time to launch.
+          </div>
+          <div className="font-mono" style={{
+            marginTop: 28, color: 'var(--text-soft)', fontSize: '0.8rem',
+            letterSpacing: '0.14em'
+          }}>
+            ← BACK TO START · OR OPEN THE LIVE DEMO ↗
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════ MAIN APP ═══════════════════
+function readHashIndex(total) {
+  const m = (window.location.hash || '').match(/^#(\d+)$/);
+  if (!m) return 0;
+  const i = parseInt(m[1], 10) - 1;
+  return (i >= 0 && i < total) ? i : 0;
+}
+
+function App() {
+  const total = SLIDES.length;
+  const [currentSlide, setCurrentSlide] = useState(() => readHashIndex(total));
+  const [slideKey, setSlideKey] = useState(0);
+  const transitioning = useRef(false);
+
+  const goTo = useCallback((idx) => {
+    if (idx < 0 || idx >= total || transitioning.current) return;
+    transitioning.current = true;
+    setSlideKey(k => k + 1);
+    setCurrentSlide(idx);
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', `#${idx + 1}`);
+    } else {
+      window.location.hash = `#${idx + 1}`;
+    }
+    setTimeout(() => { transitioning.current = false; }, 350);
+  }, [total]);
+
+  useEffect(() => {
+    const onHash = () => {
+      const idx = readHashIndex(total);
+      if (idx !== currentSlide) {
+        setSlideKey(k => k + 1);
+        setCurrentSlide(idx);
+      }
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, [currentSlide, total]);
+
+  const next = useCallback(() => goTo(currentSlide + 1), [currentSlide, goTo]);
+  const prev = useCallback(() => goTo(currentSlide - 1), [currentSlide, goTo]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault(); next();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault(); prev();
+      } else if (e.key === 'Home') {
+        e.preventDefault(); goTo(0);
+      } else if (e.key === 'End') {
+        e.preventDefault(); goTo(total - 1);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [next, prev, goTo, total]);
+
+  const slideComponents = [
+    HeroSlide, SummarySlide, DeliveredSlide, MultiPartSlide,
+    BonusCXSlide, BonusOwnerSlide, BonusAnalyticsSlide,
+    DemoSlide, RoadmapSlide, TeamSlide, ClosingSlide
+  ];
+
+  const SlideComponent = slideComponents[currentSlide];
+  const progress = ((currentSlide + 1) / total) * 100;
+
+  return (
+    <>
+      <div className="glow-1" />
+      <div className="glow-2" />
+      <div className="noise-overlay" />
+      <div className="grid-bg" />
+      <div className="progress-bar" style={{ width: `${progress}%` }} />
+
+      <div className="nav-dots">
+        {SLIDES.map((s, i) => (
+          <button key={i} className={`nav-dot ${i === currentSlide ? 'active' : ''}`} onClick={() => goTo(i)}>
+            <span className="nav-dot-label">{s.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div key={slideKey} style={{ height: '100%', width: '100%' }}>
+        <SlideComponent />
+      </div>
+
+      <div className="bottom-nav">
+        <button className="nav-btn" onClick={prev} disabled={currentSlide === 0}>← Back</button>
+        <div className="slide-counter">
+          {String(currentSlide + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+          <span style={{ margin: '0 12px', opacity: 0.3 }}>|</span>
+          {SLIDES[currentSlide].label}
+        </div>
+        <button
+          className={`nav-btn ${currentSlide < total - 1 ? 'primary' : ''}`}
+          onClick={next}
+          disabled={currentSlide === total - 1}
+        >
+          {currentSlide < total - 1 ? 'Next' : 'End'} →
+        </button>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
